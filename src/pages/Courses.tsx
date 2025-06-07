@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +13,7 @@ import { useCategories } from '@/hooks/useCategories';
 const Courses = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('All Categories');
   const [searchTerm, setSearchTerm] = useState('');
+  const navigate = useNavigate();
 
   const { data: courses, isLoading: coursesLoading, error: coursesError } = useCourses();
   const { data: categories, isLoading: categoriesLoading } = useCategories();
@@ -33,6 +35,10 @@ const Courses = () => {
   if (coursesError) {
     console.error('Error loading courses:', coursesError);
   }
+
+  const handleCourseClick = (courseId: string) => {
+    navigate(`/courses/${courseId}`);
+  };
 
   return (
     <Layout>
@@ -107,7 +113,11 @@ const Courses = () => {
           {!isLoading && filteredCourses.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {filteredCourses.map((course) => (
-                <Card key={course.id} className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
+                <Card 
+                  key={course.id} 
+                  className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
+                  onClick={() => handleCourseClick(course.id)}
+                >
                   <CardHeader className="p-0">
                     <img 
                       src={course.image_url || "https://images.unsplash.com/photo-1488590528505-98d2b5aba04b"}
@@ -156,7 +166,14 @@ const Courses = () => {
                           <span className="text-lg text-gray-400 line-through">${course.original_price}</span>
                         )}
                       </div>
-                      <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+                      <Button 
+                        size="sm" 
+                        className="bg-blue-600 hover:bg-blue-700"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleCourseClick(course.id);
+                        }}
+                      >
                         View Details
                       </Button>
                     </div>
