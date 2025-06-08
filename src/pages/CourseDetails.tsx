@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useParams } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
@@ -6,14 +5,35 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Star, Clock, Users, BookOpen, Calendar, DollarSign } from 'lucide-react';
+import { Star, Clock, Users, BookOpen, ShoppingCart } from 'lucide-react';
 import { useCourses } from '@/hooks/useCourses';
+import { useCart } from '@/hooks/useCart';
+import { useToast } from '@/hooks/use-toast';
+import { SEOHead } from '@/components/seo/SEOHead';
 
 const CourseDetails = () => {
   const { id } = useParams<{ id: string }>();
   const { data: courses, isLoading } = useCourses();
+  const { addItem } = useCart();
+  const { toast } = useToast();
   
   const course = courses?.find(c => c.id === id);
+
+  const handleAddToCart = () => {
+    if (course) {
+      addItem({
+        id: course.id,
+        title: course.title,
+        price: course.price,
+        image: course.image_url
+      });
+      
+      toast({
+        title: "Added to cart!",
+        description: `${course.title} has been added to your cart.`,
+      });
+    }
+  };
 
   if (isLoading) {
     return (
@@ -34,6 +54,7 @@ const CourseDetails = () => {
   if (!course) {
     return (
       <Layout>
+        <SEOHead title="Course Not Found - RaiseUP" />
         <div className="py-16">
           <div className="container mx-auto px-4 text-center">
             <h1 className="text-2xl font-bold text-gray-900 mb-4">Course Not Found</h1>
@@ -46,6 +67,11 @@ const CourseDetails = () => {
 
   return (
     <Layout>
+      <SEOHead 
+        title={`${course.title} - RaiseUP`}
+        description={course.description || `Learn ${course.title} with expert instruction and hands-on practice.`}
+        image={course.image_url}
+      />
       <div className="py-16">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -110,8 +136,12 @@ const CourseDetails = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <Button className="w-full bg-blue-600 hover:bg-blue-700">
-                    Enroll Now
+                  <Button 
+                    className="w-full bg-blue-600 hover:bg-blue-700"
+                    onClick={handleAddToCart}
+                  >
+                    <ShoppingCart className="w-4 h-4 mr-2" />
+                    Add to Cart
                   </Button>
                   
                   <div className="space-y-3">
@@ -160,6 +190,13 @@ const CourseDetails = () => {
                       </div>
                     </div>
                   )}
+
+                  <div className="border-t pt-4 text-sm text-gray-500 space-y-1">
+                    <p>✓ Lifetime access to course materials</p>
+                    <p>✓ Certificate of completion</p>
+                    <p>✓ 30-day money-back guarantee</p>
+                    <p>✓ Mobile and desktop access</p>
+                  </div>
                 </CardContent>
               </Card>
             </div>

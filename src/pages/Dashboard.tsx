@@ -1,14 +1,30 @@
-
 import React from 'react';
+import { Navigate } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { BookOpen, Clock, Award, TrendingUp, Users, DollarSign } from 'lucide-react';
+import { BookOpen, Clock, Award, Download } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { SEOHead } from '@/components/seo/SEOHead';
 
 const Dashboard = () => {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
+
   // Mock data - would come from Supabase in real implementation
   const enrolledCourses = [
     {
@@ -49,10 +65,16 @@ const Dashboard = () => {
 
   return (
     <Layout>
+      <SEOHead 
+        title="My Dashboard - RaiseUP"
+        description="Track your learning progress and manage your courses on RaiseUP."
+      />
       <div className="py-16">
         <div className="container mx-auto px-4">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">My Dashboard</h1>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              Welcome back, {user.first_name || 'Student'}!
+            </h1>
             <p className="text-gray-600">Track your learning progress and manage your courses</p>
           </div>
 
@@ -157,7 +179,10 @@ const Dashboard = () => {
                         </div>
                         <div className="flex space-x-2">
                           <Button variant="outline" size="sm">View</Button>
-                          <Button size="sm">Download PDF</Button>
+                          <Button size="sm">
+                            <Download className="w-4 h-4 mr-2" />
+                            Download PDF
+                          </Button>
                         </div>
                       </div>
                     </CardContent>

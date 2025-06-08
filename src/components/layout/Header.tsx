@@ -1,12 +1,16 @@
-
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { User, Search, ShoppingCart, Menu } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { User, Search, Menu, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { CartDrawer } from '@/components/cart/ShoppingCart';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Header = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, signOut } = useAuth();
   
   const navigation = [
     { name: 'Home', href: '/' },
@@ -14,9 +18,15 @@ const Header = () => {
     { name: 'About', href: '/about' },
     { name: 'Blog', href: '/blog' },
     { name: 'Contact', href: '/contact' },
+    { name: 'FAQ', href: '/faq' },
   ];
 
   const isActive = (path: string) => location.pathname === path;
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+  };
 
   return (
     <header className="bg-white shadow-sm border-b sticky top-0 z-50">
@@ -52,15 +62,49 @@ const Header = () => {
             <Button variant="ghost" size="sm" className="hidden md:flex">
               <Search className="w-4 h-4" />
             </Button>
-            <Button variant="ghost" size="sm">
-              <ShoppingCart className="w-4 h-4" />
-            </Button>
-            <Button variant="ghost" size="sm">
-              <User className="w-4 h-4" />
-            </Button>
-            <Button className="hidden md:inline-flex bg-blue-600 hover:bg-blue-700">
-              Get Started
-            </Button>
+            
+            <CartDrawer />
+            
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm">
+                    <User className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => navigate('/dashboard')}>
+                    Dashboard
+                  </DropdownMenuItem>
+                  {user.role === 'admin' && (
+                    <DropdownMenuItem onClick={() => navigate('/admin')}>
+                      Admin Panel
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem onClick={handleSignOut}>
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Sign Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => navigate('/auth')}
+              >
+                <User className="w-4 h-4" />
+              </Button>
+            )}
+            
+            {!user && (
+              <Button 
+                className="hidden md:inline-flex bg-blue-600 hover:bg-blue-700"
+                onClick={() => navigate('/auth')}
+              >
+                Get Started
+              </Button>
+            )}
 
             {/* Mobile menu */}
             <Sheet>
@@ -80,9 +124,14 @@ const Header = () => {
                       {item.name}
                     </Link>
                   ))}
-                  <Button className="w-full bg-blue-600 hover:bg-blue-700">
-                    Get Started
-                  </Button>
+                  {!user && (
+                    <Button 
+                      className="w-full bg-blue-600 hover:bg-blue-700"
+                      onClick={() => navigate('/auth')}
+                    >
+                      Get Started
+                    </Button>
+                  )}
                 </div>
               </SheetContent>
             </Sheet>
