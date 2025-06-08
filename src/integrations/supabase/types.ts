@@ -9,6 +9,36 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      blog_post_tags: {
+        Row: {
+          blog_post_id: string
+          tag_id: string
+        }
+        Insert: {
+          blog_post_id: string
+          tag_id: string
+        }
+        Update: {
+          blog_post_id?: string
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blog_post_tags_blog_post_id_fkey"
+            columns: ["blog_post_id"]
+            isOneToOne: false
+            referencedRelation: "blog_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_post_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "blog_tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       blog_posts: {
         Row: {
           author_id: string | null
@@ -59,6 +89,27 @@ export type Database = {
           },
         ]
       }
+      blog_tags: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          slug: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          slug: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          slug?: string
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           created_at: string | null
@@ -82,6 +133,54 @@ export type Database = {
           slug?: string
         }
         Relationships: []
+      }
+      certificates: {
+        Row: {
+          certificate_number: string
+          course_id: string
+          created_at: string
+          enrollment_id: string
+          id: string
+          issued_date: string
+          pdf_url: string | null
+          user_id: string
+        }
+        Insert: {
+          certificate_number: string
+          course_id: string
+          created_at?: string
+          enrollment_id: string
+          id?: string
+          issued_date?: string
+          pdf_url?: string | null
+          user_id: string
+        }
+        Update: {
+          certificate_number?: string
+          course_id?: string
+          created_at?: string
+          enrollment_id?: string
+          id?: string
+          issued_date?: string
+          pdf_url?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "certificates_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "certificates_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "enrollments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       courses: {
         Row: {
@@ -156,25 +255,34 @@ export type Database = {
         Row: {
           completed_at: string | null
           course_id: string | null
+          created_at: string | null
           enrolled_at: string | null
           id: string
           progress: number | null
+          status: string | null
+          updated_at: string | null
           user_id: string | null
         }
         Insert: {
           completed_at?: string | null
           course_id?: string | null
+          created_at?: string | null
           enrolled_at?: string | null
           id?: string
           progress?: number | null
+          status?: string | null
+          updated_at?: string | null
           user_id?: string | null
         }
         Update: {
           completed_at?: string | null
           course_id?: string | null
+          created_at?: string | null
           enrolled_at?: string | null
           id?: string
           progress?: number | null
+          status?: string | null
+          updated_at?: string | null
           user_id?: string | null
         }
         Relationships: [
@@ -183,6 +291,66 @@ export type Database = {
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payments: {
+        Row: {
+          amount: number
+          course_id: string
+          created_at: string
+          currency: string | null
+          enrollment_id: string | null
+          id: string
+          payment_method: string
+          payment_status: string | null
+          stripe_payment_intent_id: string | null
+          stripe_session_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          course_id: string
+          created_at?: string
+          currency?: string | null
+          enrollment_id?: string | null
+          id?: string
+          payment_method: string
+          payment_status?: string | null
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          course_id?: string
+          created_at?: string
+          currency?: string | null
+          enrollment_id?: string | null
+          id?: string
+          payment_method?: string
+          payment_status?: string | null
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "enrollments"
             referencedColumns: ["id"]
           },
         ]

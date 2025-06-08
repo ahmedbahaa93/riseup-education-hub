@@ -4,57 +4,52 @@ import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Search, Calendar, User } from 'lucide-react';
-
-// Mock blog data - this would come from Supabase in a real implementation
-const mockPosts = [
-  {
-    id: '1',
-    title: 'The Future of Digital Marketing: Trends to Watch in 2024',
-    excerpt: 'Discover the latest trends shaping digital marketing and how they can transform your business strategy.',
-    content: 'Full article content here...',
-    author: 'Sarah Johnson',
-    publishedAt: '2024-01-15',
-    category: 'Digital Marketing',
-    tags: ['marketing', 'trends', 'digital'],
-    featuredImage: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f'
-  },
-  {
-    id: '2',
-    title: 'Mastering Project Management: Essential Skills for Success',
-    excerpt: 'Learn the key project management skills that every professional needs to advance their career.',
-    content: 'Full article content here...',
-    author: 'Michael Chen',
-    publishedAt: '2024-01-12',
-    category: 'Project Management',
-    tags: ['project management', 'skills', 'career'],
-    featuredImage: 'https://images.unsplash.com/photo-1551434678-e076c223a692'
-  },
-  {
-    id: '3',
-    title: 'Cloud Computing Essentials: A Beginner\'s Guide',
-    excerpt: 'Everything you need to know to get started with cloud computing and advance your technical skills.',
-    content: 'Full article content here...',
-    author: 'David Rodriguez',
-    publishedAt: '2024-01-10',
-    category: 'Technology',
-    tags: ['cloud computing', 'technology', 'beginners'],
-    featuredImage: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa'
-  }
-];
+import { useBlogPosts } from '@/hooks/useBlogPosts';
+import { useBlogTags } from '@/hooks/useBlogTags';
 
 const Blog = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
 
-  const categories = ['All', 'Digital Marketing', 'Project Management', 'Technology', 'Business'];
+  const { data: blogPosts = [], isLoading: postsLoading, error: postsError } = useBlogPosts();
+  const { data: blogTags = [], isLoading: tagsLoading } = useBlogTags();
 
-  const filteredPosts = mockPosts.filter(post => {
+  // Create categories from tags
+  const categories = ['All', ...blogTags.map(tag => tag.name)];
+
+  const filteredPosts = blogPosts.filter(post => {
     const matchesSearch = post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         post.excerpt.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'All' || post.category === selectedCategory;
-    return matchesSearch && matchesCategory;
+                         (post.excerpt && post.excerpt.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    if (selectedCategory === 'All') return matchesSearch;
+    
+    // Check if post has the selected tag
+    const hasTag = post.blog_post_tags.some(
+      postTag => postTag.blog_tags.name === selectedCategory
+    );
+    
+    return matchesSearch && hasTag;
   });
+
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return 'No date';
+    return new Date(dateString).toLocaleDateString();
+  };
+
+  const getAuthorName = (author: any) => {
+    if (!author) return 'Unknown Author';
+    return `${author.first_name || ''} ${author.last_name || ''}`.trim() || 'Unknown Author';
+  };
+
+  const getPostTags = (postTags: any[]) => {
+    return postTags.map(pt => pt.blog_tags.name);
+  };
+
+  if (postsError) {
+    console.error('Error loading blog posts:', postsError);
+  }
 
   return (
     <Layout>
@@ -86,69 +81,119 @@ const Blog = () => {
 
             {/* Category filters */}
             <div className="flex flex-wrap gap-2">
-              {categories.map((category) => (
-                <Badge 
-                  key={category} 
-                  variant={category === selectedCategory ? "default" : "outline"}
-                  className="cursor-pointer hover:bg-blue-100"
-                  onClick={() => setSelectedCategory(category)}
-                >
-                  {category}
-                </Badge>
-              ))}
+              {tagsLoading ? (
+                <div className="flex gap-2">
+                  {[1, 2, 3, 4].map((i) => (
+                    <Skeleton key={i} className="h-6 w-16" />
+                  ))}
+                </div>
+              ) : (
+                categories.map((category) => (
+                  <Badge 
+                    key={category} 
+                    variant={category === selectedCategory ? "default" : "outline"}
+                    className="cursor-pointer hover:bg-blue-100"
+                    onClick={() => setSelectedCategory(category)}
+                  >
+                    {category}
+                  </Badge>
+                ))
+              )}
             </div>
           </div>
 
-          {/* Blog Posts Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredPosts.map((post) => (
-              <Card key={post.id} className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
-                <CardHeader className="p-0">
-                  <img 
-                    src={post.featuredImage}
-                    alt={post.title}
-                    className="w-full h-48 object-cover"
-                  />
-                </CardHeader>
-                
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between mb-3">
-                    <Badge variant="secondary">{post.category}</Badge>
-                    <div className="flex items-center text-sm text-gray-500">
-                      <Calendar className="w-4 h-4 mr-1" />
-                      {new Date(post.publishedAt).toLocaleDateString()}
+          {/* Loading State */}
+          {postsLoading && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {[1, 2, 3].map((i) => (
+                <Card key={i} className="overflow-hidden">
+                  <CardHeader className="p-0">
+                    <Skeleton className="w-full h-48" />
+                  </CardHeader>
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between mb-3">
+                      <Skeleton className="h-5 w-20" />
+                      <Skeleton className="h-4 w-24" />
                     </div>
-                  </div>
+                    <Skeleton className="h-6 w-full mb-2" />
+                    <Skeleton className="h-4 w-full mb-4" />
+                    <Skeleton className="h-4 w-32" />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+
+          {/* Error State */}
+          {postsError && (
+            <div className="text-center py-12">
+              <p className="text-red-600">Error loading blog posts. Please try again later.</p>
+            </div>
+          )}
+
+          {/* Blog Posts Grid */}
+          {!postsLoading && !postsError && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {filteredPosts.map((post) => (
+                <Card key={post.id} className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
+                  <CardHeader className="p-0">
+                    <img 
+                      src={post.featured_image || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f'}
+                      alt={post.title}
+                      className="w-full h-48 object-cover"
+                    />
+                  </CardHeader>
                   
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2 line-clamp-2">
-                    {post.title}
-                  </h3>
-                  
-                  <p className="text-gray-600 text-sm mb-4 line-clamp-3">
-                    {post.excerpt}
-                  </p>
-                  
-                  <div className="flex items-center text-sm text-gray-500">
-                    <User className="w-4 h-4 mr-1" />
-                    <span>By {post.author}</span>
-                  </div>
-                  
-                  <div className="flex flex-wrap gap-1 mt-3">
-                    {post.tags.map((tag) => (
-                      <Badge key={tag} variant="outline" className="text-xs">
-                        #{tag}
-                      </Badge>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between mb-3">
+                      {post.blog_post_tags.length > 0 && (
+                        <Badge variant="secondary">
+                          {post.blog_post_tags[0].blog_tags.name}
+                        </Badge>
+                      )}
+                      <div className="flex items-center text-sm text-gray-500">
+                        <Calendar className="w-4 h-4 mr-1" />
+                        {formatDate(post.published_at)}
+                      </div>
+                    </div>
+                    
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2 line-clamp-2">
+                      {post.title}
+                    </h3>
+                    
+                    {post.excerpt && (
+                      <p className="text-gray-600 text-sm mb-4 line-clamp-3">
+                        {post.excerpt}
+                      </p>
+                    )}
+                    
+                    <div className="flex items-center text-sm text-gray-500">
+                      <User className="w-4 h-4 mr-1" />
+                      <span>By {getAuthorName(post.profiles)}</span>
+                    </div>
+                    
+                    <div className="flex flex-wrap gap-1 mt-3">
+                      {getPostTags(post.blog_post_tags).map((tag) => (
+                        <Badge key={tag} variant="outline" className="text-xs">
+                          #{tag}
+                        </Badge>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
 
           {/* No posts found */}
-          {filteredPosts.length === 0 && (
+          {!postsLoading && !postsError && filteredPosts.length === 0 && (
             <div className="text-center py-12">
-              <p className="text-gray-600">No articles found matching your criteria.</p>
+              <p className="text-gray-600">
+                {blogPosts.length === 0 
+                  ? 'No blog posts available yet.' 
+                  : 'No articles found matching your criteria.'
+                }
+              </p>
             </div>
           )}
         </div>
