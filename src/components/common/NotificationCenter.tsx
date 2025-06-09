@@ -183,7 +183,7 @@ export const NotificationCenter: React.FC = () => {
                   <CardTitle className="text-lg">Notifications</CardTitle>
                   <div className="flex items-center space-x-2">
                     {unreadCount > 0 && (
-                      <Button variant="ghost" size="sm" onClick={markAllAsRead}>
+                      <Button variant="ghost\" size="sm\" onClick={markAllAsRead}>
                         <Check className="w-4 h-4 mr-1" />
                         Mark all read
                       </Button>
