@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import jsPDF from 'jspdf';
 
@@ -117,7 +118,9 @@ export const uploadCertificate = async (
 
 export const generateAndStoreCertificate = async (
   enrollmentId: string,
-  certificateData: CertificateData
+  certificateData: CertificateData,
+  courseId: string,
+  userId: string
 ): Promise<string> => {
   try {
     // Generate PDF
@@ -132,6 +135,8 @@ export const generateAndStoreCertificate = async (
       .from('certificates')
       .insert({
         enrollment_id: enrollmentId,
+        course_id: courseId,
+        user_id: userId,
         certificate_number: certificateData.certificateId,
         pdf_url: certificateUrl,
         issued_date: new Date().toISOString()

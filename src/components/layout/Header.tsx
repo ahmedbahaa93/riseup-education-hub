@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { User, Search, Menu, LogOut } from 'lucide-react';
@@ -68,7 +69,7 @@ const Header = () => {
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost\" size="sm">
+                  <Button variant="ghost" size="sm">
                     <User className="w-4 h-4" />
                   </Button>
                 </DropdownMenuTrigger>

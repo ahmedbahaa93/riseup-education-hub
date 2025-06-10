@@ -14,6 +14,7 @@ export interface WelcomeEmailData {
 
 export interface CourseEnrollmentEmailData {
   firstName: string;
+  email: string;
   courseName: string;
   instructorName: string;
   startDate?: string;
@@ -21,6 +22,7 @@ export interface CourseEnrollmentEmailData {
 
 export interface CertificateEmailData {
   firstName: string;
+  email: string;
   courseName: string;
   certificateUrl: string;
 }
