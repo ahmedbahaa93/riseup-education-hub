@@ -1,4 +1,6 @@
+
 import { renderHook, act } from '@testing-library/react';
+import { vi } from 'vitest';
 import { useCart } from '@/hooks/useCart';
 
 // Mock localStorage
