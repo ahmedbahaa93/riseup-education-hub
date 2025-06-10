@@ -14,25 +14,46 @@ interface User {
 export const useUsers = () => {
   return useQuery({
     queryKey: ['users'],
-    queryFn: async () => {
-      const { data: profiles, error } = await supabase
+    queryFn: async (): Promise<User[]> => {
+      console.log('Fetching users from Supabase...');
+      
+      // Fetch users from auth.users via profiles table
+      const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+        throw profilesError;
+      }
 
-      // For now, we'll use the profiles data and create mock user data
-      const users: User[] = profiles?.map(profile => ({
-        id: profile.id,
-        email: `user${profile.id.slice(0, 8)}@example.com`, // Mock email
-        first_name: profile.first_name,
-        last_name: profile.last_name,
-        role: profile.role || 'student',
-        created_at: profile.created_at,
-      })) || [];
+      // Fetch corresponding users data
+      const { data: users, error: usersError } = await supabase
+        .from('users')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-      return users;
+      if (usersError) {
+        console.error('Error fetching users:', usersError);
+        throw usersError;
+      }
+
+      // Combine profile and user data
+      const combinedUsers: User[] = profiles?.map(profile => {
+        const user = users?.find(u => u.id === profile.id);
+        return {
+          id: profile.id,
+          email: user?.email || 'No email',
+          first_name: profile.first_name,
+          last_name: profile.last_name,
+          role: profile.role || 'student',
+          created_at: profile.created_at,
+        };
+      }) || [];
+
+      console.log('Users fetched successfully:', combinedUsers);
+      return combinedUsers;
     },
   });
 };
@@ -42,18 +63,41 @@ export const useUpdateUserRole = () => {
 
   return useMutation({
     mutationFn: async ({ userId, role }: { userId: string; role: string }) => {
+      console.log(`Updating user ${userId} role to ${role}`);
+      
+      // Update the role in profiles table
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ role })
+        .eq('id', userId);
+
+      if (profileError) {
+        console.error('Error updating profile role:', profileError);
+        throw profileError;
+      }
+
       // First, remove existing roles for this user
-      await supabase
+      const { error: deleteError } = await supabase
         .from('user_roles')
         .delete()
         .eq('user_id', userId);
 
+      if (deleteError) {
+        console.error('Error deleting existing roles:', deleteError);
+        throw deleteError;
+      }
+
       // Then add the new role
-      const { error } = await supabase
+      const { error: insertError } = await supabase
         .from('user_roles')
         .insert([{ user_id: userId, role: role as 'admin' | 'instructor' | 'student' }]);
 
-      if (error) throw error;
+      if (insertError) {
+        console.error('Error inserting new role:', insertError);
+        throw insertError;
+      }
+
+      console.log('User role updated successfully');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
@@ -66,13 +110,20 @@ export const useDeleteUser = () => {
 
   return useMutation({
     mutationFn: async (userId: string) => {
-      // For now, we'll just delete from profiles
+      console.log(`Deleting user ${userId}`);
+      
+      // Delete from profiles table (this should cascade to other tables)
       const { error } = await supabase
         .from('profiles')
         .delete()
         .eq('id', userId);
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error deleting user:', error);
+        throw error;
+      }
+
+      console.log('User deleted successfully');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });

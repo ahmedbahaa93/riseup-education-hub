@@ -14,7 +14,9 @@ import {
   Plus,
   Search,
   Edit,
-  Trash2
+  Trash2,
+  AlertCircle,
+  Loader2
 } from 'lucide-react';
 import { useCourses } from '@/hooks/useCourses';
 import { useUsers, useUpdateUserRole, useDeleteUser } from '@/hooks/useUsers';
@@ -22,12 +24,13 @@ import { useEnrollments } from '@/hooks/useEnrollments';
 import { useAuth } from '@/contexts/AuthContext';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { useToast } from '@/hooks/use-toast';
+import { ReportsSection } from '@/components/admin/ReportsSection';
 
 const AdminDashboard = () => {
   const { user } = useAuth();
-  const { data: courses } = useCourses();
-  const { data: users } = useUsers();
-  const { data: enrollments } = useEnrollments();
+  const { data: courses, isLoading: coursesLoading, error: coursesError } = useCourses();
+  const { data: users, isLoading: usersLoading, error: usersError } = useUsers();
+  const { data: enrollments, isLoading: enrollmentsLoading, error: enrollmentsError } = useEnrollments();
   const updateUserRole = useUpdateUserRole();
   const deleteUser = useDeleteUser();
   const { toast } = useToast();
@@ -43,7 +46,7 @@ const AdminDashboard = () => {
 
   const filteredUsers = users?.filter(u => 
     u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    `${u.first_name} ${u.last_name}`.toLowerCase().includes(searchTerm.toLowerCase())
+    `${u.first_name || ''} ${u.last_name || ''}`.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
 
   const handleRoleUpdate = async (userId: string, newRole: string) => {
@@ -54,6 +57,7 @@ const AdminDashboard = () => {
         description: "User role updated successfully.",
       });
     } catch (error) {
+      console.error('Error updating user role:', error);
       toast({
         title: "Error",
         description: "Failed to update user role.",
@@ -71,6 +75,7 @@ const AdminDashboard = () => {
           description: "User deleted successfully.",
         });
       } catch (error) {
+        console.error('Error deleting user:', error);
         toast({
           title: "Error",
           description: "Failed to delete user.",
@@ -79,6 +84,37 @@ const AdminDashboard = () => {
       }
     }
   };
+
+  // Show error state if any critical data failed to load
+  if (coursesError || usersError || enrollmentsError) {
+    return (
+      <ProtectedRoute requiredRole="admin">
+        <Layout>
+          <div className="py-16">
+            <div className="container mx-auto px-4">
+              <div className="flex items-center justify-center min-h-[400px]">
+                <Card className="w-full max-w-md">
+                  <CardContent className="p-6 text-center">
+                    <AlertCircle className="w-12 h-12 text-destructive mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">Error Loading Dashboard</h3>
+                    <p className="text-gray-600 mb-4">
+                      There was an error loading the dashboard data. Please try refreshing the page.
+                    </p>
+                    <Button onClick={() => window.location.reload()}>
+                      Refresh Page
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </div>
+        </Layout>
+      </ProtectedRoute>
+    );
+  }
+
+  // Show loading state
+  const isLoading = coursesLoading || usersLoading || enrollmentsLoading;
 
   return (
     <ProtectedRoute requiredRole="admin">
@@ -97,7 +133,14 @@ const AdminDashboard = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-gray-600">Total Users</p>
-                      <p className="text-2xl font-bold">{stats.totalUsers.toLocaleString()}</p>
+                      {isLoading ? (
+                        <div className="flex items-center">
+                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                          <span>Loading...</span>
+                        </div>
+                      ) : (
+                        <p className="text-2xl font-bold">{stats.totalUsers.toLocaleString()}</p>
+                      )}
                     </div>
                     <Users className="w-8 h-8 text-blue-600" />
                   </div>
@@ -109,7 +152,14 @@ const AdminDashboard = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-gray-600">Total Courses</p>
-                      <p className="text-2xl font-bold">{stats.totalCourses}</p>
+                      {isLoading ? (
+                        <div className="flex items-center">
+                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                          <span>Loading...</span>
+                        </div>
+                      ) : (
+                        <p className="text-2xl font-bold">{stats.totalCourses}</p>
+                      )}
                     </div>
                     <BookOpen className="w-8 h-8 text-green-600" />
                   </div>
@@ -121,7 +171,14 @@ const AdminDashboard = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-gray-600">Total Revenue</p>
-                      <p className="text-2xl font-bold">${stats.totalRevenue.toLocaleString()}</p>
+                      {isLoading ? (
+                        <div className="flex items-center">
+                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                          <span>Loading...</span>
+                        </div>
+                      ) : (
+                        <p className="text-2xl font-bold">${stats.totalRevenue.toLocaleString()}</p>
+                      )}
                     </div>
                     <DollarSign className="w-8 h-8 text-purple-600" />
                   </div>
@@ -173,43 +230,62 @@ const AdminDashboard = () => {
                       </div>
                     </div>
                     
-                    <div className="space-y-4">
-                      {filteredUsers.map((user) => (
-                        <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
-                          <div>
-                            <h4 className="font-medium">{user.first_name} {user.last_name}</h4>
-                            <p className="text-sm text-gray-600">{user.email}</p>
-                            <div className="flex items-center space-x-2 mt-1">
-                              <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
-                                {user.role}
-                              </Badge>
-                              <span className="text-xs text-gray-500">
-                                Joined {new Date(user.created_at).toLocaleDateString()}
-                              </span>
+                    {usersLoading ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="w-8 h-8 animate-spin mr-2" />
+                        <span>Loading users...</span>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {filteredUsers.map((user) => (
+                          <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
+                            <div>
+                              <h4 className="font-medium">
+                                {user.first_name || user.last_name 
+                                  ? `${user.first_name || ''} ${user.last_name || ''}`.trim()
+                                  : 'No Name'
+                                }
+                              </h4>
+                              <p className="text-sm text-gray-600">{user.email}</p>
+                              <div className="flex items-center space-x-2 mt-1">
+                                <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
+                                  {user.role}
+                                </Badge>
+                                <span className="text-xs text-gray-500">
+                                  Joined {new Date(user.created_at).toLocaleDateString()}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="flex space-x-2">
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => {
+                                  const newRole = user.role === 'admin' ? 'student' : 'admin';
+                                  handleRoleUpdate(user.id, newRole);
+                                }}
+                                disabled={updateUserRole.isPending}
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => handleDeleteUser(user.id)}
+                                disabled={deleteUser.isPending}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
                             </div>
                           </div>
-                          <div className="flex space-x-2">
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => {
-                                const newRole = user.role === 'admin' ? 'student' : 'admin';
-                                handleRoleUpdate(user.id, newRole);
-                              }}
-                            >
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => handleDeleteUser(user.id)}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
+                        ))}
+                        {filteredUsers.length === 0 && !usersLoading && (
+                          <div className="text-center py-8 text-gray-500">
+                            No users found.
                           </div>
-                        </div>
-                      ))}
-                    </div>
+                        )}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -226,30 +302,41 @@ const AdminDashboard = () => {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-4">
-                      {courses?.slice(0, 10).map((course) => (
-                        <div key={course.id} className="flex items-center justify-between p-4 border rounded-lg">
-                          <div>
-                            <h4 className="font-medium">{course.title}</h4>
-                            <p className="text-sm text-gray-600">{course.categories?.name}</p>
-                            <div className="flex items-center space-x-2 mt-1">
-                              <Badge variant={course.is_published ? 'default' : 'secondary'}>
-                                {course.is_published ? 'Published' : 'Draft'}
-                              </Badge>
-                              <span className="text-sm font-medium text-blue-600">${course.price}</span>
+                    {coursesLoading ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="w-8 h-8 animate-spin mr-2" />
+                        <span>Loading courses...</span>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {courses?.slice(0, 10).map((course) => (
+                          <div key={course.id} className="flex items-center justify-between p-4 border rounded-lg">
+                            <div>
+                              <h4 className="font-medium">{course.title}</h4>
+                              <p className="text-sm text-gray-600">{course.categories?.name}</p>
+                              <div className="flex items-center space-x-2 mt-1">
+                                <Badge variant={course.is_published ? 'default' : 'secondary'}>
+                                  {course.is_published ? 'Published' : 'Draft'}
+                                </Badge>
+                                <span className="text-sm font-medium text-blue-600">${course.price}</span>
+                              </div>
+                            </div>
+                            <div className="flex space-x-2">
+                              <Button variant="outline" size="sm">
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                              <Button variant="outline" size="sm">
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
                             </div>
                           </div>
-                          <div className="flex space-x-2">
-                            <Button variant="outline" size="sm">
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                            <Button variant="outline" size="sm">
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
+                        )) || (
+                          <div className="text-center py-8 text-gray-500">
+                            No courses found.
                           </div>
-                        </div>
-                      ))}
-                    </div>
+                        )}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -260,77 +347,40 @@ const AdminDashboard = () => {
                     <CardTitle>Recent Enrollments</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-4">
-                      {enrollments?.map((enrollment) => (
-                        <div key={enrollment.id} className="flex items-center justify-between p-4 border rounded-lg">
-                          <div>
-                            <h4 className="font-medium">{enrollment.student_name}</h4>
-                            <p className="text-sm text-gray-600">{enrollment.course_title}</p>
-                            <span className="text-xs text-gray-500">
-                              Enrolled {new Date(enrollment.enrolled_at).toLocaleDateString()}
-                            </span>
+                    {enrollmentsLoading ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="w-8 h-8 animate-spin mr-2" />
+                        <span>Loading enrollments...</span>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {enrollments?.map((enrollment) => (
+                          <div key={enrollment.id} className="flex items-center justify-between p-4 border rounded-lg">
+                            <div>
+                              <h4 className="font-medium">{enrollment.student_name}</h4>
+                              <p className="text-sm text-gray-600">{enrollment.course_title}</p>
+                              <span className="text-xs text-gray-500">
+                                Enrolled {new Date(enrollment.enrolled_at).toLocaleDateString()}
+                              </span>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-bold text-green-600">${enrollment.amount_paid}</p>
+                              <Badge variant="default">{enrollment.status}</Badge>
+                            </div>
                           </div>
-                          <div className="text-right">
-                            <p className="font-bold text-green-600">${enrollment.amount_paid}</p>
-                            <Badge variant="default">{enrollment.status}</Badge>
+                        )) || (
+                          <div className="text-center py-8 text-gray-500">
+                            No enrollments found.
                           </div>
-                        </div>
-                      ))}
-                    </div>
+                        )}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>
 
               <TabsContent value="reports" className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Revenue Report</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        <div className="flex justify-between">
-                          <span>Total Revenue</span>
-                          <span className="font-bold">${stats.totalRevenue.toLocaleString()}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Total Enrollments</span>
-                          <span className="font-bold">{enrollments?.length || 0}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Active Courses</span>
-                          <span className="font-bold text-green-600">
-                            {courses?.filter(c => c.is_published).length || 0}
-                          </span>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Platform Statistics</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        <div className="flex justify-between">
-                          <span>Total Users</span>
-                          <span className="font-bold">{stats.totalUsers}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Total Courses</span>
-                          <span className="font-bold">{stats.totalCourses}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Admin Users</span>
-                          <span className="font-bold text-purple-600">
-                            {users?.filter(u => u.role === 'admin').length || 0}
-                          </span>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
+                <ReportsSection />
               </TabsContent>
             </Tabs>
           </div>
