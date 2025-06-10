@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import type { User } from '@supabase/supabase-js';
 
@@ -56,9 +57,25 @@ export const auth = {
       .eq('id', user.id)
       .single();
 
+    // Get user roles
+    const { data: userRoles } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id);
+
+    // Determine the highest role (admin > instructor > student)
+    let role = 'student';
+    if (userRoles && userRoles.length > 0) {
+      if (userRoles.some(r => r.role === 'admin')) {
+        role = 'admin';
+      } else if (userRoles.some(r => r.role === 'instructor')) {
+        role = 'instructor';
+      }
+    }
+
     return {
       ...user,
-      role: profile?.role || 'student',
+      role,
       first_name: profile?.first_name,
       last_name: profile?.last_name,
     };

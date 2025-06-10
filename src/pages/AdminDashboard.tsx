@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,33 +17,68 @@ import {
   Trash2
 } from 'lucide-react';
 import { useCourses } from '@/hooks/useCourses';
+import { useUsers, useUpdateUserRole, useDeleteUser } from '@/hooks/useUsers';
+import { useEnrollments } from '@/hooks/useEnrollments';
 import { useAuth } from '@/contexts/AuthContext';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { useToast } from '@/hooks/use-toast';
 
 const AdminDashboard = () => {
   const { user } = useAuth();
   const { data: courses } = useCourses();
+  const { data: users } = useUsers();
+  const { data: enrollments } = useEnrollments();
+  const updateUserRole = useUpdateUserRole();
+  const deleteUser = useDeleteUser();
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Mock data - would come from API in real implementation
+  // Calculate statistics from real data
   const stats = {
-    totalUsers: 1250,
-    totalCourses: 45,
-    totalRevenue: 125000,
-    monthlyGrowth: 12.5
+    totalUsers: users?.length || 0,
+    totalCourses: courses?.length || 0,
+    totalRevenue: enrollments?.reduce((sum, enrollment) => sum + (enrollment.amount_paid || 0), 0) || 0,
+    monthlyGrowth: 12.5 // This would need to be calculated based on time-series data
   };
 
-  const recentUsers = [
-    { id: '1', name: 'John Doe', email: 'john@example.com', role: 'student', joinDate: '2024-01-15' },
-    { id: '2', name: 'Jane Smith', email: 'jane@example.com', role: 'instructor', joinDate: '2024-01-14' },
-    { id: '3', name: 'Bob Johnson', email: 'bob@example.com', role: 'student', joinDate: '2024-01-13' },
-  ];
+  const filteredUsers = users?.filter(u => 
+    u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    `${u.first_name} ${u.last_name}`.toLowerCase().includes(searchTerm.toLowerCase())
+  ) || [];
 
-  const recentEnrollments = [
-    { id: '1', studentName: 'Alice Brown', courseName: 'Digital Marketing', enrollDate: '2024-01-15', amount: 299 },
-    { id: '2', studentName: 'Charlie Wilson', courseName: 'Project Management', enrollDate: '2024-01-14', amount: 399 },
-    { id: '3', studentName: 'Diana Davis', courseName: 'AWS Certification', enrollDate: '2024-01-13', amount: 499 },
-  ];
+  const handleRoleUpdate = async (userId: string, newRole: string) => {
+    try {
+      await updateUserRole.mutateAsync({ userId, role: newRole });
+      toast({
+        title: "Success",
+        description: "User role updated successfully.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update user role.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    if (confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+      try {
+        await deleteUser.mutateAsync(userId);
+        toast({
+          title: "Success",
+          description: "User deleted successfully.",
+        });
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to delete user.",
+          variant: "destructive",
+        });
+      }
+    }
+  };
 
   return (
     <ProtectedRoute requiredRole="admin">
@@ -138,23 +174,36 @@ const AdminDashboard = () => {
                     </div>
                     
                     <div className="space-y-4">
-                      {recentUsers.map((user) => (
+                      {filteredUsers.map((user) => (
                         <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
                           <div>
-                            <h4 className="font-medium">{user.name}</h4>
+                            <h4 className="font-medium">{user.first_name} {user.last_name}</h4>
                             <p className="text-sm text-gray-600">{user.email}</p>
                             <div className="flex items-center space-x-2 mt-1">
                               <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
                                 {user.role}
                               </Badge>
-                              <span className="text-xs text-gray-500">Joined {user.joinDate}</span>
+                              <span className="text-xs text-gray-500">
+                                Joined {new Date(user.created_at).toLocaleDateString()}
+                              </span>
                             </div>
                           </div>
                           <div className="flex space-x-2">
-                            <Button variant="outline" size="sm">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => {
+                                const newRole = user.role === 'admin' ? 'student' : 'admin';
+                                handleRoleUpdate(user.id, newRole);
+                              }}
+                            >
                               <Edit className="w-4 h-4" />
                             </Button>
-                            <Button variant="outline" size="sm">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleDeleteUser(user.id)}
+                            >
                               <Trash2 className="w-4 h-4" />
                             </Button>
                           </div>
@@ -178,7 +227,7 @@ const AdminDashboard = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      {courses?.slice(0, 5).map((course) => (
+                      {courses?.slice(0, 10).map((course) => (
                         <div key={course.id} className="flex items-center justify-between p-4 border rounded-lg">
                           <div>
                             <h4 className="font-medium">{course.title}</h4>
@@ -212,16 +261,18 @@ const AdminDashboard = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      {recentEnrollments.map((enrollment) => (
+                      {enrollments?.map((enrollment) => (
                         <div key={enrollment.id} className="flex items-center justify-between p-4 border rounded-lg">
                           <div>
-                            <h4 className="font-medium">{enrollment.studentName}</h4>
-                            <p className="text-sm text-gray-600">{enrollment.courseName}</p>
-                            <span className="text-xs text-gray-500">Enrolled {enrollment.enrollDate}</span>
+                            <h4 className="font-medium">{enrollment.student_name}</h4>
+                            <p className="text-sm text-gray-600">{enrollment.course_title}</p>
+                            <span className="text-xs text-gray-500">
+                              Enrolled {new Date(enrollment.enrolled_at).toLocaleDateString()}
+                            </span>
                           </div>
                           <div className="text-right">
-                            <p className="font-bold text-green-600">${enrollment.amount}</p>
-                            <Badge variant="default">Paid</Badge>
+                            <p className="font-bold text-green-600">${enrollment.amount_paid}</p>
+                            <Badge variant="default">{enrollment.status}</Badge>
                           </div>
                         </div>
                       ))}
@@ -239,16 +290,18 @@ const AdminDashboard = () => {
                     <CardContent>
                       <div className="space-y-4">
                         <div className="flex justify-between">
-                          <span>This Month</span>
-                          <span className="font-bold">$15,420</span>
+                          <span>Total Revenue</span>
+                          <span className="font-bold">${stats.totalRevenue.toLocaleString()}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span>Last Month</span>
-                          <span className="font-bold">$12,350</span>
+                          <span>Total Enrollments</span>
+                          <span className="font-bold">{enrollments?.length || 0}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span>Growth</span>
-                          <span className="font-bold text-green-600">+24.8%</span>
+                          <span>Active Courses</span>
+                          <span className="font-bold text-green-600">
+                            {courses?.filter(c => c.is_published).length || 0}
+                          </span>
                         </div>
                       </div>
                     </CardContent>
@@ -256,21 +309,23 @@ const AdminDashboard = () => {
 
                   <Card>
                     <CardHeader>
-                      <CardTitle>Course Performance</CardTitle>
+                      <CardTitle>Platform Statistics</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-4">
                         <div className="flex justify-between">
-                          <span>Most Popular</span>
-                          <span className="font-bold">Digital Marketing</span>
+                          <span>Total Users</span>
+                          <span className="font-bold">{stats.totalUsers}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span>Highest Revenue</span>
-                          <span className="font-bold">AWS Certification</span>
+                          <span>Total Courses</span>
+                          <span className="font-bold">{stats.totalCourses}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span>Completion Rate</span>
-                          <span className="font-bold text-green-600">87%</span>
+                          <span>Admin Users</span>
+                          <span className="font-bold text-purple-600">
+                            {users?.filter(u => u.role === 'admin').length || 0}
+                          </span>
                         </div>
                       </div>
                     </CardContent>
