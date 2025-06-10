@@ -8,19 +8,41 @@ export interface CartItem {
   quantity: number;
 }
 
+const CART_STORAGE_KEY = 'raiseup_cart';
+
 export const useCart = () => {
   const [items, setItems] = useState<CartItem[]>([]);
+  const [isLoaded, setIsLoaded] = useState(false);
 
+  // Load cart from localStorage on mount
   useEffect(() => {
-    const savedCart = localStorage.getItem('cart');
-    if (savedCart) {
-      setItems(JSON.parse(savedCart));
+    try {
+      const savedCart = localStorage.getItem(CART_STORAGE_KEY);
+      if (savedCart) {
+        const parsedCart = JSON.parse(savedCart);
+        if (Array.isArray(parsedCart)) {
+          setItems(parsedCart);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading cart from localStorage:', error);
+      // Clear corrupted data
+      localStorage.removeItem(CART_STORAGE_KEY);
+    } finally {
+      setIsLoaded(true);
     }
   }, []);
 
+  // Save cart to localStorage whenever items change (but only after initial load)
   useEffect(() => {
-    localStorage.setItem('cart', JSON.stringify(items));
-  }, [items]);
+    if (isLoaded) {
+      try {
+        localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
+      } catch (error) {
+        console.error('Error saving cart to localStorage:', error);
+      }
+    }
+  }, [items, isLoaded]);
 
   const addItem = (item: Omit<CartItem, 'quantity'>) => {
     setItems(prev => {
@@ -68,5 +90,6 @@ export const useCart = () => {
     updateQuantity,
     clearCart,
     total,
+    isLoaded,
   };
 };

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,7 +15,11 @@ import {
   Edit,
   Trash2,
   AlertCircle,
-  Loader2
+  Loader2,
+  UserPlus,
+  BookPlus,
+  Settings,
+  MoreHorizontal
 } from 'lucide-react';
 import { useCourses } from '@/hooks/useCourses';
 import { useUsers, useUpdateUserRole, useDeleteUser } from '@/hooks/useUsers';
@@ -25,6 +28,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { useToast } from '@/hooks/use-toast';
 import { ReportsSection } from '@/components/admin/ReportsSection';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const AdminDashboard = () => {
   const { user } = useAuth();
@@ -85,12 +94,26 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleAddUser = () => {
+    toast({
+      title: "Feature Coming Soon",
+      description: "User creation functionality will be available soon.",
+    });
+  };
+
+  const handleAddCourse = () => {
+    toast({
+      title: "Feature Coming Soon",
+      description: "Course creation functionality will be available soon.",
+    });
+  };
+
   // Show error state if any critical data failed to load
   if (coursesError || usersError || enrollmentsError) {
     return (
       <ProtectedRoute requiredRole="admin">
         <Layout>
-          <div className="py-16">
+          <div className="py-8 lg:py-16">
             <div className="container mx-auto px-4">
               <div className="flex items-center justify-center min-h-[400px]">
                 <Card className="w-full max-w-md">
@@ -119,101 +142,104 @@ const AdminDashboard = () => {
   return (
     <ProtectedRoute requiredRole="admin">
       <Layout>
-        <div className="py-16">
+        <div className="py-8 lg:py-16">
           <div className="container mx-auto px-4">
-            <div className="mb-8">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Admin Dashboard</h1>
-              <p className="text-gray-600">Manage your platform and monitor performance</p>
+            {/* Header - Responsive */}
+            <div className="mb-6 lg:mb-8">
+              <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2">Admin Dashboard</h1>
+              <p className="text-sm lg:text-base text-gray-600">Manage your platform and monitor performance</p>
             </div>
 
-            {/* Stats Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {/* Stats Overview - Responsive Grid */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6 mb-6 lg:mb-8">
               <Card>
-                <CardContent className="p-6">
+                <CardContent className="p-4 lg:p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-600">Total Users</p>
+                      <p className="text-xs lg:text-sm font-medium text-gray-600">Total Users</p>
                       {isLoading ? (
                         <div className="flex items-center">
-                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                          <span>Loading...</span>
+                          <Loader2 className="w-3 h-3 lg:w-4 lg:h-4 animate-spin mr-2" />
+                          <span className="text-xs lg:text-sm">Loading...</span>
                         </div>
                       ) : (
-                        <p className="text-2xl font-bold">{stats.totalUsers.toLocaleString()}</p>
+                        <p className="text-lg lg:text-2xl font-bold">{stats.totalUsers.toLocaleString()}</p>
                       )}
                     </div>
-                    <Users className="w-8 h-8 text-blue-600" />
+                    <Users className="w-6 h-6 lg:w-8 lg:h-8 text-blue-600" />
                   </div>
                 </CardContent>
               </Card>
 
               <Card>
-                <CardContent className="p-6">
+                <CardContent className="p-4 lg:p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-600">Total Courses</p>
+                      <p className="text-xs lg:text-sm font-medium text-gray-600">Total Courses</p>
                       {isLoading ? (
                         <div className="flex items-center">
-                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                          <span>Loading...</span>
+                          <Loader2 className="w-3 h-3 lg:w-4 lg:h-4 animate-spin mr-2" />
+                          <span className="text-xs lg:text-sm">Loading...</span>
                         </div>
                       ) : (
-                        <p className="text-2xl font-bold">{stats.totalCourses}</p>
+                        <p className="text-lg lg:text-2xl font-bold">{stats.totalCourses}</p>
                       )}
                     </div>
-                    <BookOpen className="w-8 h-8 text-green-600" />
+                    <BookOpen className="w-6 h-6 lg:w-8 lg:h-8 text-green-600" />
                   </div>
                 </CardContent>
               </Card>
 
               <Card>
-                <CardContent className="p-6">
+                <CardContent className="p-4 lg:p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-600">Total Revenue</p>
+                      <p className="text-xs lg:text-sm font-medium text-gray-600">Total Revenue</p>
                       {isLoading ? (
                         <div className="flex items-center">
-                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                          <span>Loading...</span>
+                          <Loader2 className="w-3 h-3 lg:w-4 lg:h-4 animate-spin mr-2" />
+                          <span className="text-xs lg:text-sm">Loading...</span>
                         </div>
                       ) : (
-                        <p className="text-2xl font-bold">${stats.totalRevenue.toLocaleString()}</p>
+                        <p className="text-lg lg:text-2xl font-bold">${stats.totalRevenue.toLocaleString()}</p>
                       )}
                     </div>
-                    <DollarSign className="w-8 h-8 text-purple-600" />
+                    <DollarSign className="w-6 h-6 lg:w-8 lg:h-8 text-purple-600" />
                   </div>
                 </CardContent>
               </Card>
 
               <Card>
-                <CardContent className="p-6">
+                <CardContent className="p-4 lg:p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-600">Monthly Growth</p>
-                      <p className="text-2xl font-bold">+{stats.monthlyGrowth}%</p>
+                      <p className="text-xs lg:text-sm font-medium text-gray-600">Monthly Growth</p>
+                      <p className="text-lg lg:text-2xl font-bold">+{stats.monthlyGrowth}%</p>
                     </div>
-                    <TrendingUp className="w-8 h-8 text-orange-600" />
+                    <TrendingUp className="w-6 h-6 lg:w-8 lg:h-8 text-orange-600" />
                   </div>
                 </CardContent>
               </Card>
             </div>
 
             <Tabs defaultValue="users" className="space-y-4">
-              <TabsList>
-                <TabsTrigger value="users">User Management</TabsTrigger>
-                <TabsTrigger value="courses">Course Management</TabsTrigger>
-                <TabsTrigger value="enrollments">Enrollments</TabsTrigger>
-                <TabsTrigger value="reports">Reports</TabsTrigger>
+              {/* Responsive Tabs */}
+              <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4">
+                <TabsTrigger value="users" className="text-xs lg:text-sm">Users</TabsTrigger>
+                <TabsTrigger value="courses" className="text-xs lg:text-sm">Courses</TabsTrigger>
+                <TabsTrigger value="enrollments" className="text-xs lg:text-sm">Enrollments</TabsTrigger>
+                <TabsTrigger value="reports" className="text-xs lg:text-sm">Reports</TabsTrigger>
               </TabsList>
 
               <TabsContent value="users" className="space-y-4">
                 <Card>
                   <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle>User Management</CardTitle>
-                      <Button>
-                        <Plus className="w-4 h-4 mr-2" />
-                        Add User
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                      <CardTitle className="text-lg lg:text-xl">User Management</CardTitle>
+                      <Button onClick={handleAddUser} className="w-full lg:w-auto">
+                        <UserPlus className="w-4 h-4 mr-2" />
+                        <span className="hidden lg:inline">Add User</span>
+                        <span className="lg:hidden">Add</span>
                       </Button>
                     </div>
                   </CardHeader>
@@ -238,8 +264,8 @@ const AdminDashboard = () => {
                     ) : (
                       <div className="space-y-4">
                         {filteredUsers.map((user) => (
-                          <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
-                            <div>
+                          <div key={user.id} className="flex flex-col lg:flex-row lg:items-center justify-between p-4 border rounded-lg gap-4">
+                            <div className="flex-1">
                               <h4 className="font-medium">
                                 {user.first_name || user.last_name 
                                   ? `${user.first_name || ''} ${user.last_name || ''}`.trim()
@@ -265,16 +291,20 @@ const AdminDashboard = () => {
                                   handleRoleUpdate(user.id, newRole);
                                 }}
                                 disabled={updateUserRole.isPending}
+                                className="flex-1 lg:flex-none"
                               >
-                                <Edit className="w-4 h-4" />
+                                <Edit className="w-4 h-4 lg:mr-2" />
+                                <span className="hidden lg:inline">Edit</span>
                               </Button>
                               <Button 
                                 variant="outline" 
                                 size="sm"
                                 onClick={() => handleDeleteUser(user.id)}
                                 disabled={deleteUser.isPending}
+                                className="flex-1 lg:flex-none"
                               >
-                                <Trash2 className="w-4 h-4" />
+                                <Trash2 className="w-4 h-4 lg:mr-2" />
+                                <span className="hidden lg:inline">Delete</span>
                               </Button>
                             </div>
                           </div>
@@ -293,11 +323,12 @@ const AdminDashboard = () => {
               <TabsContent value="courses" className="space-y-4">
                 <Card>
                   <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle>Course Management</CardTitle>
-                      <Button>
-                        <Plus className="w-4 h-4 mr-2" />
-                        Add Course
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                      <CardTitle className="text-lg lg:text-xl">Course Management</CardTitle>
+                      <Button onClick={handleAddCourse} className="w-full lg:w-auto">
+                        <BookPlus className="w-4 h-4 mr-2" />
+                        <span className="hidden lg:inline">Add Course</span>
+                        <span className="lg:hidden">Add</span>
                       </Button>
                     </div>
                   </CardHeader>
@@ -310,8 +341,8 @@ const AdminDashboard = () => {
                     ) : (
                       <div className="space-y-4">
                         {courses?.slice(0, 10).map((course) => (
-                          <div key={course.id} className="flex items-center justify-between p-4 border rounded-lg">
-                            <div>
+                          <div key={course.id} className="flex flex-col lg:flex-row lg:items-center justify-between p-4 border rounded-lg gap-4">
+                            <div className="flex-1">
                               <h4 className="font-medium">{course.title}</h4>
                               <p className="text-sm text-gray-600">{course.categories?.name}</p>
                               <div className="flex items-center space-x-2 mt-1">
@@ -322,12 +353,27 @@ const AdminDashboard = () => {
                               </div>
                             </div>
                             <div className="flex space-x-2">
-                              <Button variant="outline" size="sm">
-                                <Edit className="w-4 h-4" />
+                              <Button variant="outline" size="sm" className="flex-1 lg:flex-none">
+                                <Edit className="w-4 h-4 lg:mr-2" />
+                                <span className="hidden lg:inline">Edit</span>
                               </Button>
-                              <Button variant="outline" size="sm">
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="outline" size="sm">
+                                    <MoreHorizontal className="w-4 h-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent>
+                                  <DropdownMenuItem>
+                                    <Settings className="w-4 h-4 mr-2" />
+                                    Settings
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem className="text-red-600">
+                                    <Trash2 className="w-4 h-4 mr-2" />
+                                    Delete
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                             </div>
                           </div>
                         )) || (
@@ -344,7 +390,7 @@ const AdminDashboard = () => {
               <TabsContent value="enrollments" className="space-y-4">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Recent Enrollments</CardTitle>
+                    <CardTitle className="text-lg lg:text-xl">Recent Enrollments</CardTitle>
                   </CardHeader>
                   <CardContent>
                     {enrollmentsLoading ? (
@@ -355,15 +401,15 @@ const AdminDashboard = () => {
                     ) : (
                       <div className="space-y-4">
                         {enrollments?.map((enrollment) => (
-                          <div key={enrollment.id} className="flex items-center justify-between p-4 border rounded-lg">
-                            <div>
+                          <div key={enrollment.id} className="flex flex-col lg:flex-row lg:items-center justify-between p-4 border rounded-lg gap-4">
+                            <div className="flex-1">
                               <h4 className="font-medium">{enrollment.student_name}</h4>
                               <p className="text-sm text-gray-600">{enrollment.course_title}</p>
                               <span className="text-xs text-gray-500">
                                 Enrolled {new Date(enrollment.enrolled_at).toLocaleDateString()}
                               </span>
                             </div>
-                            <div className="text-right">
+                            <div className="text-left lg:text-right">
                               <p className="font-bold text-green-600">${enrollment.amount_paid}</p>
                               <Badge variant="default">{enrollment.status}</Badge>
                             </div>

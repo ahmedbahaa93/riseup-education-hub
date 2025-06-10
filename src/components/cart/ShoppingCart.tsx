@@ -1,18 +1,20 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { ShoppingCart, Trash2, Plus, Minus } from 'lucide-react';
+import { ShoppingCart, Trash2, Plus, Minus, CreditCard, X } from 'lucide-react';
 import { useCart } from '@/hooks/useCart';
 
 export const CartDrawer: React.FC = () => {
   const { items, removeItem, updateQuantity, total, clearCart } = useCart();
   const [isOpen, setIsOpen] = useState(false);
+  const navigate = useNavigate();
 
   const handleCheckout = () => {
-    // Navigate to checkout page
-    window.location.href = '/checkout';
+    setIsOpen(false);
+    navigate('/checkout');
   };
 
   return (
@@ -34,27 +36,40 @@ export const CartDrawer: React.FC = () => {
       {isOpen && (
         <div className="fixed inset-0 z-50 bg-black/50" onClick={() => setIsOpen(false)}>
           <div 
-            className="fixed right-0 top-0 h-full w-96 bg-white shadow-lg"
+            className="fixed right-0 top-0 h-full w-full max-w-md bg-white shadow-lg"
             onClick={(e) => e.stopPropagation()}
           >
             <Card className="h-full rounded-none border-0">
-              <CardHeader>
+              <CardHeader className="border-b">
                 <CardTitle className="flex items-center justify-between">
-                  Shopping Cart
+                  <div className="flex items-center space-x-2">
+                    <ShoppingCart className="w-5 h-5" />
+                    <span>Shopping Cart</span>
+                  </div>
                   <Button variant="ghost" size="sm" onClick={() => setIsOpen(false)}>
-                    ×
+                    <X className="w-4 h-4" />
                   </Button>
                 </CardTitle>
               </CardHeader>
               
-              <CardContent className="flex flex-col h-full">
+              <CardContent className="flex flex-col h-full p-0">
                 {items.length === 0 ? (
-                  <div className="flex-1 flex items-center justify-center">
-                    <p className="text-gray-500">Your cart is empty</p>
+                  <div className="flex-1 flex flex-col items-center justify-center p-6">
+                    <ShoppingCart className="w-16 h-16 text-gray-300 mb-4" />
+                    <p className="text-gray-500 text-center">Your cart is empty</p>
+                    <Button 
+                      className="mt-4" 
+                      onClick={() => {
+                        setIsOpen(false);
+                        navigate('/courses');
+                      }}
+                    >
+                      Browse Courses
+                    </Button>
                   </div>
                 ) : (
                   <>
-                    <div className="flex-1 space-y-4 overflow-y-auto">
+                    <div className="flex-1 space-y-4 overflow-y-auto p-4">
                       {items.map((item) => (
                         <div key={item.id} className="flex items-center space-x-3 p-3 border rounded-lg">
                           <img 
@@ -62,8 +77,8 @@ export const CartDrawer: React.FC = () => {
                             alt={item.title}
                             className="w-16 h-16 object-cover rounded"
                           />
-                          <div className="flex-1">
-                            <h4 className="font-medium text-sm">{item.title}</h4>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-medium text-sm truncate">{item.title}</h4>
                             <p className="text-blue-600 font-bold">${item.price}</p>
                           </div>
                           <div className="flex items-center space-x-2">
@@ -94,15 +109,16 @@ export const CartDrawer: React.FC = () => {
                       ))}
                     </div>
                     
-                    <div className="space-y-4 pt-4">
+                    <div className="border-t p-4 space-y-4">
                       <Separator />
                       <div className="flex justify-between items-center">
                         <span className="text-lg font-bold">Total: ${total.toFixed(2)}</span>
-                        <Button variant="outline" onClick={clearCart}>
+                        <Button variant="outline" onClick={clearCart} size="sm">
                           Clear Cart
                         </Button>
                       </div>
                       <Button className="w-full" onClick={handleCheckout}>
+                        <CreditCard className="w-4 h-4 mr-2" />
                         Proceed to Checkout
                       </Button>
                     </div>

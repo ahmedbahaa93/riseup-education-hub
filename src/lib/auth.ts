@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import type { User } from '@supabase/supabase-js';
 
@@ -46,47 +45,77 @@ export const auth = {
   },
 
   async getCurrentUser(): Promise<AuthUser | null> {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) return null;
-
-    // Get user profile data
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single();
-
-    // Get user roles
-    const { data: userRoles } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', user.id);
-
-    // Determine the highest role (admin > instructor > student)
-    let role = 'student';
-    if (userRoles && userRoles.length > 0) {
-      if (userRoles.some(r => r.role === 'admin')) {
-        role = 'admin';
-      } else if (userRoles.some(r => r.role === 'instructor')) {
-        role = 'instructor';
+    try {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      
+      if (error) {
+        console.error('Error getting current user:', error);
+        return null;
       }
-    }
+      
+      if (!user) return null;
 
-    return {
-      ...user,
-      role,
-      first_name: profile?.first_name,
-      last_name: profile?.last_name,
-    };
+      // Get user profile data
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError) {
+        console.error('Error fetching profile:', profileError);
+        // Return user without profile data if profile fetch fails
+        return {
+          ...user,
+          role: 'student',
+          first_name: user.user_metadata?.first_name,
+          last_name: user.user_metadata?.last_name,
+        };
+      }
+
+      // Get user roles
+      const { data: userRoles, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id);
+
+      if (rolesError) {
+        console.error('Error fetching user roles:', rolesError);
+      }
+
+      // Determine the highest role (admin > instructor > student)
+      let role = profile?.role || 'student';
+      if (userRoles && userRoles.length > 0) {
+        if (userRoles.some(r => r.role === 'admin')) {
+          role = 'admin';
+        } else if (userRoles.some(r => r.role === 'instructor')) {
+          role = 'instructor';
+        }
+      }
+
+      return {
+        ...user,
+        role,
+        first_name: profile?.first_name || user.user_metadata?.first_name,
+        last_name: profile?.last_name || user.user_metadata?.last_name,
+      };
+    } catch (error) {
+      console.error('Error in getCurrentUser:', error);
+      return null;
+    }
   },
 
   onAuthStateChange(callback: (user: AuthUser | null) => void) {
     return supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user) {
-        const user = await this.getCurrentUser();
-        callback(user);
-      } else {
+      try {
+        if (session?.user) {
+          const user = await this.getCurrentUser();
+          callback(user);
+        } else {
+          callback(null);
+        }
+      } catch (error) {
+        console.error('Error in auth state change handler:', error);
         callback(null);
       }
     });

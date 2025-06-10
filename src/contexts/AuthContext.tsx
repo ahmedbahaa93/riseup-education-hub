@@ -25,25 +25,83 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Get initial user
-    auth.getCurrentUser().then(setUser).finally(() => setLoading(false));
+    let mounted = true;
+
+    const initializeAuth = async () => {
+      try {
+        // Get initial user
+        const currentUser = await auth.getCurrentUser();
+        if (mounted) {
+          setUser(currentUser);
+        }
+      } catch (error) {
+        console.error('Error initializing auth:', error);
+        if (mounted) {
+          setUser(null);
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    initializeAuth();
 
     // Listen for auth changes
-    const { data: { subscription } } = auth.onAuthStateChange(setUser);
+    const { data: { subscription } } = auth.onAuthStateChange(async (event, session) => {
+      if (!mounted) return;
 
-    return () => subscription.unsubscribe();
+      try {
+        if (session?.user) {
+          const user = await auth.getCurrentUser();
+          setUser(user);
+        } else {
+          setUser(null);
+        }
+      } catch (error) {
+        console.error('Error handling auth state change:', error);
+        setUser(null);
+      }
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    await auth.signIn(email, password);
+    setLoading(true);
+    try {
+      await auth.signIn(email, password);
+      // User state will be updated via the auth state change listener
+    } catch (error) {
+      setLoading(false);
+      throw error;
+    }
   };
 
   const signUp = async (email: string, password: string, userData: { firstName: string; lastName: string }) => {
-    await auth.signUp(email, password, userData);
+    setLoading(true);
+    try {
+      await auth.signUp(email, password, userData);
+      // User state will be updated via the auth state change listener
+    } catch (error) {
+      setLoading(false);
+      throw error;
+    }
   };
 
   const signOut = async () => {
-    await auth.signOut();
+    setLoading(true);
+    try {
+      await auth.signOut();
+      // User state will be updated via the auth state change listener
+    } catch (error) {
+      setLoading(false);
+      throw error;
+    }
   };
 
   const resetPassword = async (email: string) => {

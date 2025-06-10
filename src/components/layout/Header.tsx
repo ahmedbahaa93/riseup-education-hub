@@ -1,17 +1,19 @@
-
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { User, Search, Menu, LogOut } from 'lucide-react';
+import { User, Search, Menu, LogOut, ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { CartDrawer } from '@/components/cart/ShoppingCart';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCart } from '@/hooks/useCart';
+import { Badge } from '@/components/ui/badge';
 
 const Header = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const { items } = useCart();
   
   const navigation = [
     { name: 'Home', href: '/' },
@@ -25,8 +27,12 @@ const Header = () => {
   const isActive = (path: string) => location.pathname === path;
 
   const handleSignOut = async () => {
-    await signOut();
-    navigate('/');
+    try {
+      await signOut();
+      navigate('/');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
   };
 
   return (
@@ -64,13 +70,19 @@ const Header = () => {
               <Search className="w-4 h-4" />
             </Button>
             
-            <CartDrawer />
+            {/* Cart with improved icon */}
+            <div className="relative">
+              <CartDrawer />
+            </div>
             
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm">
+                  <Button variant="ghost" size="sm" className="flex items-center space-x-2">
                     <User className="w-4 h-4" />
+                    <span className="hidden md:inline text-sm">
+                      {user.first_name || 'User'}
+                    </span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
@@ -93,8 +105,10 @@ const Header = () => {
                 variant="ghost" 
                 size="sm"
                 onClick={() => navigate('/auth')}
+                className="flex items-center space-x-2"
               >
                 <User className="w-4 h-4" />
+                <span className="hidden md:inline">Sign In</span>
               </Button>
             )}
             
