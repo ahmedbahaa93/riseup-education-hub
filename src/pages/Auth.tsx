@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,17 +12,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { SEOHead } from '@/components/seo/SEOHead';
 
 const Auth = () => {
+  // All hooks must be declared at the top, before any conditional returns
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const { user, signIn, signUp, resetPassword } = useAuth();
   const location = useLocation();
-
-  // Redirect if already logged in
-  if (user) {
-    const from = location.state?.from?.pathname || '/dashboard';
-    return <Navigate to={from} replace />;
-  }
 
   // Login form state
   const [loginForm, setLoginForm] = useState({
@@ -39,6 +35,12 @@ const Auth = () => {
   });
 
   const [resetEmail, setResetEmail] = useState('');
+
+  // Redirect if already logged in - AFTER all hooks are declared
+  if (user) {
+    const from = location.state?.from?.pathname || '/dashboard';
+    return <Navigate to={from} replace />;
+  }
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
